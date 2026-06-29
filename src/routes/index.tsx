@@ -30,18 +30,31 @@ function Index() {
 
   const h = home.data;
 
-  // Combine upcoming events and announcements for the ticker
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const upcomingEvents = (upcoming.data?.results ?? [])
+    .filter((event) => {
+      const eventDate = new Date(event.event_date);
+      const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+      return eventDay >= startOfToday;
+    })
+    .slice(0, 6);
+
+  const latestAnnouncements = (announcements.data?.results ?? []).slice(0, 6);
+
+  // Combine current/future events and announcements for the ticker
   const tickerItems = [
-    ...(upcoming.data?.results.slice(0, 5).map((e) => ({
+    ...upcomingEvents.map((event) => ({
       type: "event" as const,
-      title: e.title,
-      date: new Date(e.event_date).toLocaleDateString(undefined, { dateStyle: "medium" }),
-    })) ?? []),
-    ...(announcements.data?.results.slice(0, 5).map((a) => ({
+      title: event.title,
+      date: new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: "medium" }),
+    })),
+    ...latestAnnouncements.map((announcement) => ({
       type: "announcement" as const,
-      title: a.title,
-      date: new Date(a.created_at).toLocaleDateString(undefined, { dateStyle: "medium" }),
-    })) ?? []),
+      title: announcement.title,
+      date: new Date(announcement.created_at).toLocaleDateString(undefined, { dateStyle: "medium" }),
+    })),
   ];
 
   return (

@@ -33,9 +33,17 @@ interface Props {
 
 export function ResourceManager({ title, endpoint, fields, multipart, listFields }: Props) {
   const qc = useQueryClient();
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  const queryParams = new URLSearchParams();
+  if (search) queryParams.set("search", search);
+  queryParams.set("page", String(page));
+
   const list = useQuery({
-    queryKey: ["admin", endpoint],
-    queryFn: () => apiGet<Paginated<Record<string, unknown>>>(endpoint, true),
+    queryKey: ["admin", endpoint, search, page],
+    queryFn: () => apiGet<Paginated<Record<string, unknown>>>(`${endpoint}?${queryParams.toString()}`, true),
   });
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -134,6 +142,17 @@ export function ResourceManager({ title, endpoint, fields, multipart, listFields
     }
   }
 
+  function handleSearch() {
+    setSearch(searchInput.trim());
+    setPage(1);
+  }
+
+  function clearSearch() {
+    setSearchInput("");
+    setSearch("");
+    setPage(1);
+  }
+
   function openDeleteModal(row: Record<string, unknown>) {
     const name = (row.title || row.name || `Item #${row.id}`) as string;
     setDeleteTarget({ id: row.id as number, name });
@@ -153,6 +172,27 @@ export function ResourceManager({ title, endpoint, fields, multipart, listFields
 
       {list.isLoading && <p className="text-muted-foreground">Loading…</p>}
       {list.isError && <p className="text-destructive text-sm">Unable to load. Check that the API is reachable and you're authenticated.</p>}
+
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+        <div className="flex-1 max-w-md">
+          <label className="text-xs font-medium text-muted-foreground block mb-1">Search</label>
+          <div className="flex gap-2">
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder={`Search ${title.toLowerCase()}...`}
+              className="w-full px-3 py-2 rounded-md border bg-background text-sm"
+            />
+            <button onClick={handleSearch} className="px-3 py-2 rounded-md border text-sm hover:bg-secondary cursor-pointer">Search</button>
+          </div>
+        </div>
+        {(search || searchInput) && (
+          <button onClick={clearSearch} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+            Clear
+          </button>
+        )}
+      </div>
 
       {list.data && (
         <div className="rounded-xl border bg-card overflow-hidden">
@@ -182,6 +222,29 @@ export function ResourceManager({ title, endpoint, fields, multipart, listFields
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {list.data && (
+        <div className="flex items-center justify-between px-4 py-3 border-t text-sm text-muted-foreground">
+          <div>{list.data.count} total</div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary cursor-pointer"
+            >
+              Previous
+            </button>
+            <span>Page {page}</span>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!list.data.next}
+              className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 

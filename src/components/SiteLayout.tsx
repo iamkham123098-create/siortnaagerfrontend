@@ -54,6 +54,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
     newEventsCount,
     latestAnnouncements,
     latestEvents,
+    markItemAsSeen,
     markAllAsSeen,
   } = useNotifications();
 
@@ -61,9 +62,6 @@ export function SiteLayout({ children }: { children: ReactNode }) {
 
   const handleNotificationOpen = (open: boolean) => {
     setNotificationOpen(open);
-    if (!open && totalNewCount > 0) {
-      markAllAsSeen();
-    }
   };
 
   return (
@@ -129,7 +127,10 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                               key={a.id}
                               to="/announcements"
                               className="block py-1.5 text-sm hover:text-brand-blue"
-                              onClick={() => setNotificationOpen(false)}
+                              onClick={() => {
+                                markItemAsSeen("announcement", a.id);
+                                setNotificationOpen(false);
+                              }}
                             >
                               {a.title}
                             </Link>
@@ -144,9 +145,13 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                           {latestEvents.map((e) => (
                             <Link
                               key={e.id}
-                              to="/events"
+                              to="/events/$id"
+                              params={{ id: String(e.id) }}
                               className="block py-1.5 text-sm hover:text-brand-blue"
-                              onClick={() => setNotificationOpen(false)}
+                              onClick={() => {
+                                markItemAsSeen("event", e.id);
+                                setNotificationOpen(false);
+                              }}
                             >
                               {e.title}
                             </Link>
